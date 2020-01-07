@@ -1,5 +1,13 @@
 package idrlisp
 
+modules =
+  Idrlisp.Sexp,
+  Test.Assertions,
+  Test.Sexp
+
+tests =
+  Test.Sexp.test
+
 sourcedir = src
 executable = idrlisp
 -- opts = "--optimise-nat-like-types --cg-opt -O2"
