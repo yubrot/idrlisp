@@ -1,0 +1,8 @@
+package idrlisp
+
+sourcedir = src
+executable = idrlisp
+-- opts = "--optimise-nat-like-types --cg-opt -O2"
+
+main = Main
+
