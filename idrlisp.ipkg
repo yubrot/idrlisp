@@ -1,12 +1,18 @@
 package idrlisp
 
+pkgs =
+  contrib
+
 modules =
   Idrlisp.Sexp,
+  Idrlisp.Lexer,
   Test.Assertions,
-  Test.Sexp
+  Test.Sexp,
+  Test.Lexer
 
 tests =
-  Test.Sexp.test
+  Test.Sexp.test,
+  Test.Lexer.test
 
 sourcedir = src
 executable = idrlisp
