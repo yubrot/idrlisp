@@ -29,3 +29,9 @@ shouldShow a expected =
     "But got          " ++ show a
   ]
 
+shouldSatisfy : Show a => a -> (a -> Bool) -> IO ()
+shouldSatisfy a pred =
+  assert (pred a) [
+    "Expectation unsatisfied: " ++ show a
+  ]
+

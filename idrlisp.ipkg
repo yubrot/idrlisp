@@ -6,13 +6,16 @@ pkgs =
 modules =
   Idrlisp.Sexp,
   Idrlisp.Lexer,
+  Idrlisp.Parser,
   Test.Assertions,
   Test.Sexp,
-  Test.Lexer
+  Test.Lexer,
+  Test.Parser
 
 tests =
   Test.Sexp.test,
-  Test.Lexer.test
+  Test.Lexer.test,
+  Test.Parser.test
 
 sourcedir = src
 executable = idrlisp
