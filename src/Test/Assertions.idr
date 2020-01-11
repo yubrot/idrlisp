@@ -35,3 +35,12 @@ shouldSatisfy a pred =
     "Expectation unsatisfied: " ++ show a
   ]
 
+shouldBe' : (Eq a, Show a) => IO a -> a -> IO ()
+shouldBe' a b = a >>= (`shouldBe` b)
+
+shouldShow' : Show a => IO a -> String -> IO ()
+shouldShow' a b = a >>= (`shouldShow` b)
+
+shouldSatisfy' : Show a => IO a -> (a -> Bool) -> IO ()
+shouldSatisfy' a b = a >>= (`shouldSatisfy` b)
+
