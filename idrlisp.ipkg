@@ -10,17 +10,20 @@ modules =
   Idrlisp.Error,
   Idrlisp.Monad,
   Idrlisp.Env,
+  Idrlisp.Pattern,
   Test.Assertions,
   Test.Sexp,
   Test.Lexer,
   Test.Parser,
-  Test.Env
+  Test.Env,
+  Test.Pattern
 
 tests =
   Test.Sexp.test,
   Test.Lexer.test,
   Test.Parser.test,
-  Test.Env.test
+  Test.Env.test,
+  Test.Pattern.test
 
 sourcedir = src
 executable = idrlisp

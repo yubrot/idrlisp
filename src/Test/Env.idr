@@ -6,7 +6,7 @@ import Idrlisp.Env as Env
 
 export
 test : IO ()
-test = describe "Idrlisp.Env" $ do
+test = describe "Test.Env" $ do
   describe "single" $ do
     env <- Env.new' Nothing
     runLIO (Env.lookup "foo" env)
