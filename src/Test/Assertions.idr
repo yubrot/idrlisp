@@ -35,6 +35,9 @@ shouldSatisfy a pred =
     "Expectation unsatisfied: " ++ show a
   ]
 
+castIdentical : (Cast a b, Cast b a, Eq a, Eq b) => (a, b) -> Bool
+castIdentical (a, b) = cast a == b && cast b == a
+
 shouldBe' : (Eq a, Show a) => IO a -> a -> IO ()
 shouldBe' a b = a >>= (`shouldBe` b)
 

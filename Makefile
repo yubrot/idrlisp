@@ -7,3 +7,5 @@ test:
 clean:
 	idris --clean idrlisp.ipkg
 
+repl:
+	idris --repl idrlisp.ipkg

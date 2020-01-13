@@ -3,8 +3,8 @@ module Test.Sexp
 import Test.Assertions
 import Idrlisp.Sexp
 
-castTestCases : List (Sexp (), SSyn ())
-castTestCases =
+sexpAndSSynTestcases : List (Sexp (), SSyn ())
+sexpAndSSynTestcases =
   [ (Num 123, Num 123)
   , (Sym "foo", Sym "foo")
   , (Str "hello", Str "hello")
@@ -30,6 +30,14 @@ castTestCases =
   , (Pure (), Pure ())
   ]
 
+sexpAndSListTestcases : List (Sexp (), SList ())
+sexpAndSListTestcases =
+  [ (Num 123, Improper (Num 123))
+  , ([], Proper [])
+  , ([Num 1, Num 2], Proper [Num 1, Num 2])
+  , (Num 1 :: Num 2 :: Num 3, Improper (Num 1 :: Num 2 :: Num 3))
+  ]
+
 showTestCases : List (String, SSyn ())
 showTestCases =
   [ ("123", Num 123)
@@ -52,10 +60,8 @@ showTestCases =
 export
 test : IO ()
 test = describe "Test.Sexp" $ do
-  describe "Casting from Sexp to SSyn" $
-    for_ castTestCases (\t => cast (fst t) `shouldBe` snd t)
-  describe "Casting from SSyn to Sexp" $
-    for_ castTestCases (\t => cast (snd t) `shouldBe` fst t)
-  describe "Showing SSyn" $
+  describe "cast" $ do
+    for_ sexpAndSSynTestcases (`shouldSatisfy` castIdentical)
+    for_ sexpAndSListTestcases (`shouldSatisfy` castIdentical)
+  describe "show" $ do
     for_ showTestCases (\t => snd t `shouldShow` fst t)
-

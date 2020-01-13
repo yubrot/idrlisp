@@ -14,7 +14,7 @@ bind' f r args = toList <$> Pattern.bind (MkPattern f r) args
 export
 test : IO ()
 test = describe "Test.Pattern" $ do
-  describe "Showing pattern" $ do
+  describe "show" $ do
     MkPattern [] Nothing
       `shouldShow` "()"
     MkPattern ["x"] Nothing
@@ -27,7 +27,7 @@ test = describe "Test.Pattern" $ do
       `shouldShow` "(x . a)"
     MkPattern ["x", "y"] (Just "a")
       `shouldShow` "(x y . a)"
-  describe "Building pattern" $ do
+  describe "build" $ do
     build' []
       `shouldBe` Right (MkPattern [] Nothing)
     build' [Sym "x"]
@@ -44,7 +44,7 @@ test = describe "Test.Pattern" $ do
       `shouldBe` Left (Num 123)
     build' [Sym "x", Str "f", Sym "y"]
       `shouldBe` Left (Str "f")
-  describe "Binding pattern" $ do
+  describe "bind" $ do
     bind' [] Nothing []
       `shouldBe` Right []
     bind' ["x", "y"] Nothing [Num 1, Num 2]

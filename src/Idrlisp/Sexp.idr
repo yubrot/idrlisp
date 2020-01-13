@@ -12,6 +12,11 @@ data Sexp : Type -> Type where
   (::) : (car : Sexp a) -> (cdr : Sexp a) -> Sexp a
   Pure : a -> Sexp a
 
+public export
+data SList a
+  = Proper (List (Sexp a))
+  | Improper (Sexp a)
+
 namespace Syntax
   infixr 6 :.:
 
@@ -42,6 +47,12 @@ Eq a => Eq (Sexp a) where
   (==) _ _ = False
 
 export
+Eq a => Eq (SList a) where
+  (==) (Proper xs) (Proper ys) = xs == ys
+  (==) (Improper x) (Improper y) = x == y
+  (==) _ _ = False
+
+export
 Eq a => Eq (SSyn a) where
   x == y = assert_total (eq x y)
     where
@@ -59,6 +70,19 @@ Eq a => Eq (SSyn a) where
       eq (xs :.: x) (ys :.: y) = xs == ys && x == y
       eq (Pure x) (Pure y) = x == y
       eq _ _ = False
+
+export
+Cast (Sexp a) (SList a) where
+  cast (x :: xs) with (cast {to = SList a} xs)
+    | Proper xs' = Proper (x :: xs')
+    | Improper xs' = Improper (x :: xs')
+  cast [] = Proper []
+  cast x = Improper x
+
+export
+Cast (SList a) (Sexp a) where
+  cast (Proper xs) = foldr (::) Nil xs
+  cast (Improper x) = x
 
 export
 Cast (Sexp a) (SSyn a) where
@@ -117,4 +141,8 @@ Show a => Show (SSyn a) where
 export
 Show a => Show (Sexp a) where
   show x = show (the (SSyn a) (cast x))
+
+export
+Show a => Show (SList a) where
+  show x = show (the (Sexp a) (cast x))
 
