@@ -15,6 +15,7 @@ modules =
   Idrlisp.Syntax,
   Idrlisp.Monad,
   Idrlisp,
+  TestRunner,
   Test.Assertions,
   Test.Sexp,
   Test.Lexer,
