@@ -2,7 +2,6 @@ module Idrlisp.Env
 
 import Data.IORef
 import Data.SortedMap
-import Idrlisp.Monad
 
 %default covering
 
@@ -13,48 +12,36 @@ record Env a where
   table : IORef (SortedMap String a)
 
 export
-new' : Maybe (Env a) -> IO (Env a)
-new' parent = do
+new : Maybe (Env a) -> IO (Env a)
+new parent = do
   table <- newIORef empty
   pure $ MkEnv parent table
 
 export
-new : Maybe (Env a) -> LIO (Env a)
-new parent = lift $ new' parent
+define : String -> a -> Env a -> IO ()
+define key value env = modifyIORef (table env) (insert key value)
 
 export
-define : String -> a -> Env a -> LIO ()
-define key value env =
-  lift $ modifyIORef (table env) (insert key value)
-
-export
-set : String -> a -> Env a -> LIO ()
+set : String -> a -> Env a -> IO (Either String ())
 set key value env = do
-  t <- lift $ readIORef (table env)
+  t <- readIORef (table env)
   case lookup key t of
-    Just _ =>
-      lift $ writeIORef (table env) (insert key value t)
+    Just _ => do
+      writeIORef (table env) (insert key value t)
+      pure $ Right ()
     Nothing =>
       case parent env of
         Just e => set key value e
-        Nothing => throw $ UndefinedVariable key
+        Nothing => pure $ Left key
 
 export
-lookup : String -> Env a -> LIO (Maybe a)
+lookup : String -> Env a -> IO (Either String a)
 lookup key env = do
-  t <- lift $ readIORef (table env)
+  t <- readIORef (table env)
   case lookup key t of
-    Just x => pure $ Just x
+    Just x => pure $ Right x
     Nothing =>
       case parent env of
         Just e => lookup key e
-        Nothing => pure Nothing
-
-export
-get : String -> Env a -> LIO a
-get key env = do
-  x <- lookup key env
-  case x of
-    Just x => pure x
-    Nothing => throw $ UndefinedVariable key
+        Nothing => pure $ Left key
 

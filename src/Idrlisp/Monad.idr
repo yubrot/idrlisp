@@ -1,21 +1,20 @@
 module Idrlisp.Monad
 
 import public Control.Catchable
-import public Idrlisp.Error
 
 %default total
 
 public export
-record LIO a where
+record LIO e a where
   constructor MkLIO
-  runLIO : IO (Either Error a)
+  runLIO : IO (Either e a)
 
 export
-Functor LIO where
+Functor (LIO e) where
   map f (MkLIO a) = MkLIO $ map (map f) a
 
 export
-Applicative LIO where
+Applicative (LIO e) where
   pure = MkLIO . pure . Right
   (MkLIO f) <*> a = MkLIO $ do
     f <- f
@@ -24,7 +23,7 @@ Applicative LIO where
       Right f => runLIO $ map f a
 
 export
-Monad LIO where
+Monad (LIO e) where
   (MkLIO a) >>= f = MkLIO $ do
     a <- a
     case a of
@@ -32,7 +31,7 @@ Monad LIO where
       Right a => runLIO $ f a
 
 export
-Catchable LIO Error where
+Catchable (LIO e) e where
   throw = MkLIO . pure . Left
   catch (MkLIO a) f = MkLIO $ do
     a <- a
@@ -41,7 +40,7 @@ Catchable LIO Error where
       Right a => pure $ Right a
 
 export
-lift : IO a -> LIO a
+lift : IO a -> LIO e a
 lift x = MkLIO $ do
   x <- x
   pure $ Right x
