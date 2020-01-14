@@ -5,23 +5,23 @@ import Idrlisp.Sexp
 import Idrlisp.Pattern
 import Idrlisp.Signature
 
-matchSignature : (sig : Signature) -> Sexp () -> Maybe (SignatureType sig)
+matchSignature : (sig : Signature ()) -> Sexp () -> Maybe (SignatureType sig)
 matchSignature = match
 
-matchArgsSignature : (sig : ArgsSignature) -> List (Sexp ()) -> Maybe (SignatureType sig)
+matchArgsSignature : (sig : ArgsSignature ()) -> List (Sexp ()) -> Maybe (SignatureType sig)
 matchArgsSignature = match
 
 signatureTest : IO ()
 signatureTest = describe "Signature" $ do
-  let any  : Signature = Any "any"
-  let num  : Signature = Num "num"
-  let sym  : Signature = Sym "sym"
-  let str  : Signature = Str "str"
-  let bool : Signature = Bool "bool"
-  let nil  : Signature = Nil
-  let vec2 : Signature = [Num "x", Num "y"]
-  let strs : Signature = List (Str "strs")
-  let pat  : Signature = Pat "args"
+  let any  : Signature () = Any "any"
+  let num  : Signature () = Num "num"
+  let sym  : Signature () = Sym "sym"
+  let str  : Signature () = Str "str"
+  let bool : Signature () = Bool "bool"
+  let nil  : Signature () = Nil
+  let vec2 : Signature () = [Num "x", Num "y"]
+  let strs : Signature () = List (Str "strs")
+  let pat  : Signature () = Pat "args"
 
   describe "show" $ do
     any `shouldShow` "any"
@@ -83,10 +83,10 @@ signatureTest = describe "Signature" $ do
 
 argsSignatureTest : IO ()
 argsSignatureTest = describe "ArgsSignature" $ do
-  let zero      : ArgsSignature = []
-  let one       : ArgsSignature = [Any "x"]
-  let two       : ArgsSignature = [Any "x", Any "y"]
-  let twoOrMore : ArgsSignature = (Any "x" :: Any "y" :: Rest (Any "z"))
+  let zero      : ArgsSignature () = []
+  let one       : ArgsSignature () = [Any "x"]
+  let two       : ArgsSignature () = [Any "x", Any "y"]
+  let twoOrMore : ArgsSignature () = (Any "x" :: Any "y" :: Rest (Any "z"))
 
   describe "show" $ do
     zero `shouldShow` "()"

@@ -6,26 +6,27 @@ import Idrlisp.Pattern as Pattern
 %default total
 
 public export
-data Signature
+data Signature a
   = Any String
   | Num String
   | Sym String
   | Str String
   | Bool String
   | Nil
-  | (::) Signature Signature
-  | List Signature
+  | (::) (Signature a) (Signature a)
+  | List (Signature a)
   | Pat String
+  | Pure String a
 
 namespace Args
   public export
-  data ArgsSignature
+  data ArgsSignature a
     = Nil
-    | (::) Signature ArgsSignature
-    | Rest Signature
+    | (::) (Signature a) (ArgsSignature a)
+    | Rest (Signature a)
 
 export
-Cast Signature (Sexp ()) where
+Cast (Signature a) (Sexp b) where
   cast (Any x) = Sym x
   cast (Num x) = Sym x
   cast (Sym x) = Sym x
@@ -35,21 +36,22 @@ Cast Signature (Sexp ()) where
   cast (x :: y) = cast x :: cast y
   cast (List x) = [cast x, Sym "..."]
   cast (Pat x) = Sym x
+  cast (Pure x _) = Sym x
 
 export
-Cast ArgsSignature (Sexp ()) where
+Cast (ArgsSignature a) (Sexp b) where
   cast Nil = Nil
   cast (x :: y) = cast x :: cast y
   cast (Rest x) = [cast x, Sym "..."]
 
 export
 covering
-Show Signature where
+Show (Signature a) where
   show x = show (the (Sexp ()) (cast x))
 
 export
 covering
-Show ArgsSignature where
+Show (ArgsSignature a) where
   show x = show (the (Sexp ()) (cast x))
 
 public export
@@ -58,8 +60,13 @@ interface Match a s | a where
   match : (sig : a) -> s -> Maybe (SignatureType sig)
 
 public export
-Match Signature (Sexp ()) where
-  SignatureType (Any _) = Sexp ()
+Match () () where
+  SignatureType () = ()
+  match () () = Just ()
+
+public export
+Match a b => Match (Signature a) (Sexp b) where
+  SignatureType (Any _) = Sexp b
   SignatureType (Num _) = Double
   SignatureType (Sym _) = String
   SignatureType (Str _) = String
@@ -69,8 +76,9 @@ Match Signature (Sexp ()) where
     case y of
       Nil => SignatureType x
       y' => (SignatureType x, SignatureType y')
-  SignatureType (List x) = List (SignatureType x)
+  SignatureType (List a) = List (SignatureType a)
   SignatureType (Pat _) = Pattern
+  SignatureType (Pure _ a) = SignatureType a
 
   match (Any _) x = Just x
   match (Num _) (Num x) = Just x
@@ -91,16 +99,18 @@ Match Signature (Sexp ()) where
       -- It seems that Idris type checker cannot specialize `SignatureType (car :: cdr)`.
       _ => believe_me (x', y')
   match (car :: cdr) _ = Nothing
-  match (List a) xs with (cast {to = SList ()} xs)
-    | Proper xs' = traverse (match a) xs'
+  match (List s) xs with (cast {to = SList b} xs)
+    | Proper xs' = traverse (match s) xs'
     | Improper x = Nothing
   match (Pat _) x =
     case Pattern.build x of
-      Left _ => Nothing
       Right p => Just p
+      Left _ => Nothing
+  match (Pure _ s) (Pure x) = match s x
+  match (Pure _ s) _ = Nothing
 
 public export
-Match ArgsSignature (List (Sexp ())) where
+Match a b => Match (ArgsSignature a) (List (Sexp b)) where
   SignatureType Nil = ()
   SignatureType (x :: y) =
     case y of
@@ -118,5 +128,5 @@ Match ArgsSignature (List (Sexp ())) where
       -- Same as Match Signature, Idris type checker cannot specialize `SignatureType (car :: cdr)`.
       _ => believe_me (x', y')
   match (car :: cdr) _ = Nothing
-  match (Rest a) xs = traverse (match a) xs
+  match (Rest s) xs = traverse (match s) xs
 
