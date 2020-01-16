@@ -1,6 +1,6 @@
 module Idrlisp.Sexp
 
-%default covering
+%default total
 
 public export
 data Sexp : Type -> Type where
@@ -56,6 +56,7 @@ export
 Eq a => Eq (SSyn a) where
   x == y = assert_total (eq x y)
     where
+      covering
       eq : SSyn a -> SSyn a -> Bool
       eq (Num x) (Num y) = x == y
       eq (Sym x) (Sym y) = x == y
@@ -88,6 +89,7 @@ export
 Cast (Sexp a) (SSyn a) where
   cast x = assert_total (cast x)
     where
+      covering
       cast : Sexp a -> SSyn a
       cast (Num x) = Num x
       cast (Sym x) = Sym x
@@ -109,6 +111,7 @@ export
 Cast (SSyn a) (Sexp a) where
   cast x = assert_total (cast x)
     where
+      covering
       cast : SSyn a -> Sexp a
       cast (Num x) = Num x
       cast (Sym x) = Sym x
@@ -125,18 +128,22 @@ Cast (SSyn a) (Sexp a) where
 
 export
 Show a => Show (SSyn a) where
-  show (Num x) = show x
-  show (Sym x) = x
-  show (Str x) = show x
-  show (Bool x) = if x then "#t" else "#f"
-  show Nil = "()"
-  show (Quote x) = "'" ++ show x
-  show (Quasiquote x) = "`" ++ show x
-  show (Unquote x) = "," ++ show x
-  show (UnquoteSplicing x) = ",@" ++ show x
-  show (App xs) = "(" ++ unwords (map show xs) ++ ")"
-  show (xs :.: x) = "(" ++ unwords (map show xs) ++ " . " ++ show x ++ ")"
-  show (Pure x) = show x
+  show x = assert_total (show' x)
+    where
+      covering
+      show' : SSyn a -> String
+      show' (Num x) = show x
+      show' (Sym x) = x
+      show' (Str x) = show x
+      show' (Bool x) = if x then "#t" else "#f"
+      show' Nil = "()"
+      show' (Quote x) = "'" ++ show x
+      show' (Quasiquote x) = "`" ++ show x
+      show' (Unquote x) = "," ++ show x
+      show' (UnquoteSplicing x) = ",@" ++ show x
+      show' (App xs) = "(" ++ unwords (map show xs) ++ ")"
+      show' (xs :.: x) = "(" ++ unwords (map show xs) ++ " . " ++ show x ++ ")"
+      show' (Pure x) = show x
 
 export
 Show a => Show (Sexp a) where

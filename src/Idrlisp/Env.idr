@@ -3,7 +3,7 @@ module Idrlisp.Env
 import Data.IORef
 import Data.SortedMap
 
-%default covering
+%default total
 
 export
 record Env a where
@@ -31,7 +31,7 @@ set key value env = do
       pure $ Right ()
     Nothing =>
       case parent env of
-        Just e => set key value e
+        Just e => set key value (assert_smaller env e)
         Nothing => pure $ Left key
 
 export
@@ -42,6 +42,6 @@ lookup key env = do
     Just x => pure $ Right x
     Nothing =>
       case parent env of
-        Just e => lookup key e
+        Just e => lookup key (assert_smaller env e)
         Nothing => pure $ Left key
 

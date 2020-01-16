@@ -2,7 +2,7 @@ module Idrlisp.Pattern
 
 import Idrlisp.Sexp
 
-%default covering
+%default total
 
 public export
 record Pattern where

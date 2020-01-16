@@ -4,7 +4,7 @@ import Text.Parser
 import Idrlisp.Sexp
 import Idrlisp.Lexer
 
-%default covering
+%default total
 
 public export
 interface Parse (c : Bool) (ty : Type) | ty where
@@ -47,9 +47,9 @@ namespace Terminal
 mutual
   s : Grammar Token True (SSyn a)
   s = choice
-    [ do term LPAREN; xs <- ss; term RPAREN; pure xs
-    , do term LBRACK; xs <- ss; term RBRACK; pure xs
-    , sQuoted
+    [ list LPAREN RPAREN
+    , list LBRACK RBRACK
+    , quotes
     , Num <$> num
     , Sym <$> sym
     , Str <$> str
@@ -57,24 +57,46 @@ mutual
     , do term FALSE; pure $ Bool False
     ]
 
-  sQuoted : Grammar Token True (SSyn a)
-  sQuoted = choice
-    [ do term QUOTE; Quote <$> s
-    , do term QUASIQUOTE; Quasiquote <$> s
-    , do term UNQUOTE; Unquote <$> s
-    , do term UNQUOTE_SPLICING; UnquoteSplicing <$> s
-    ]
+  quotes : Grammar Token True (SSyn a)
+  quotes =
+    do
+      f <- quote
+      commit
+      x <- s
+      pure $ f x
+    where
+      -- TODO: Why these function liftings are required for the totality checker?
+      quote : Grammar Token True (SSyn a -> SSyn a)
+      quote = choice
+        [ do term QUOTE; pure Quote
+        , do term QUASIQUOTE; pure Quasiquote
+        , do term UNQUOTE; pure Unquote
+        , do term UNQUOTE_SPLICING; pure UnquoteSplicing
+        ]
 
-  ss : Grammar Token False (SSyn a)
-  ss {a} = do
-    xs <- many $ s {a}
-    case xs of
-      [] => pure Nil
-      x :: xs => do
-        y <- optional $ term DOT *> s {a}
-        case y of
-          Nothing => pure $ App (x :: xs)
-          Just y => pure $ x :: xs :.: y
+  list : Token -> Token -> Grammar Token True (SSyn a)
+  list open close =
+    do
+      term open
+      commit
+      xs <- init
+      y <- rest xs
+      term close
+      pure $ build xs y
+    where
+      -- TODO: ditto
+      init : Grammar Token False (List (SSyn a))
+      init = many s
+
+      rest : List (SSyn a) -> Grammar Token False (Maybe (SSyn a))
+      rest [] = pure Nothing
+      rest _ = optional $ do term DOT; commit; s
+
+      build : List (SSyn a) -> Maybe (SSyn a) -> SSyn a
+      build [] _ = Nil
+      -- TODO: Why these aren't total?
+      build (x :: xs) Nothing = assert_total $ App (x :: xs)
+      build (x :: xs) (Just y) = assert_total $ x :: xs :.: y
 
 export
 Parse True ty => Parse False (List ty) where
