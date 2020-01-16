@@ -1,7 +1,7 @@
 module TestRunner
 
 import Idrlisp
-import Idrlisp.Monad
+import CIO
 
 %default covering
 
@@ -20,26 +20,26 @@ record TestCase where
   command : Command
 
 namespace Exec
-  parses : String -> LIO String Value
+  parses : String -> CIO String Value
   parses input = either throw pure $ parse input
 
-  compiles : Context -> Value -> LIO String (Code Value)
+  compiles : Context -> Value -> CIO String (Code Value)
   compiles ctx value = lift (compileOnContext ctx value) >>= either throw pure
 
-  success : Show a => String -> a -> LIO String ()
+  success : Show a => String -> a -> CIO String ()
   success expected a =
     if trim (show a) == expected
        then pure ()
        else throw $ show a
 
-  failure : Show b => (a -> LIO String b) -> a -> LIO String ()
+  failure : Show b => (a -> CIO String b) -> a -> CIO String ()
   failure f x = do
     err <- (Just <$> f x) `catch` \_ => pure Nothing
     case err of
       Nothing => pure ()
       Just x => throw $ show x
 
-  execCommand : Context -> Command -> LIO String ()
+  execCommand : Context -> Command -> CIO String ()
   execCommand ctx (ParseSuccess input output) = parses input >>= success output
   execCommand ctx (ParseFailure input) = failure parses input
   execCommand ctx (CompileSuccess input output) = parses input >>= compiles ctx >>= success output
@@ -48,7 +48,7 @@ namespace Exec
   execCommand ctx (EvalFailure input) = pure ()
   execCommand ctx (EvalAll input) = pure ()
 
-  execTestCase : Context -> TestCase -> LIO String Bool
+  execTestCase : Context -> TestCase -> CIO String Bool
   execTestCase ctx (MkTestCase header command) =
     do
       execCommand ctx command
@@ -59,7 +59,7 @@ namespace Exec
       pure True
 
 namespace Read
-  readLine : File -> LIO String String
+  readLine : File -> CIO String String
   readLine fh = do
     a <- lift $ fGetLine fh
     case a of
@@ -69,12 +69,12 @@ namespace Read
           S k => pure $ substr 0 k s
       Left e => throw $ show e
 
-  readLines : Nat -> File -> LIO String String
+  readLines : Nat -> File -> CIO String String
   readLines k fh = do
     strs <- sequence $ replicate k $ readLine fh
     pure $ concat $ intersperse "\n" strs
 
-  readCommand : File -> LIO String Command
+  readCommand : File -> CIO String Command
   readCommand fh =
     case split (== ' ') !(readLine fh) of
       ["PARSE_SUCCESS", input, output] => do
@@ -104,7 +104,7 @@ namespace Read
       xs =>
         throw $ "Unknown test comamnd: " ++ show xs
 
-  readTestCases : File -> LIO String (List TestCase)
+  readTestCases : File -> CIO String (List TestCase)
   readTestCases fh = do
     header <- (Just <$> readLine fh) `catch` \_ => pure Nothing
     case header of
@@ -116,7 +116,7 @@ namespace Read
 
 export
 run : Context -> File -> IO (Either String Nat)
-run ctx fh = runLIO $ do
+run ctx fh = runCIO $ do
   testCases <- readTestCases fh
   results <- traverse (execTestCase ctx) testCases
   pure $ length $ filter id results

@@ -4,6 +4,7 @@ pkgs =
   contrib
 
 modules =
+  CIO,
   Idrlisp.Sexp,
   Idrlisp.Lexer,
   Idrlisp.Parser,
@@ -13,7 +14,6 @@ modules =
   Idrlisp.Env,
   Idrlisp.Value,
   Idrlisp.Syntax,
-  Idrlisp.Monad,
   Idrlisp,
   TestRunner,
   Test.Assertions,

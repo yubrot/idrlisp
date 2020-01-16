@@ -1,10 +1,10 @@
 module Idrlisp
 
+import CIO
 import public Idrlisp.Value
 import Idrlisp.Parser as Parser
 import Idrlisp.Env as Env
 import Idrlisp.Syntax as Syntax
-import Idrlisp.Monad
 
 %default covering
 
@@ -33,9 +33,9 @@ newContext =
 
 export
 compileOnContext : Context -> Value -> IO (Either String (Code Value))
-compileOnContext ctx v = runLIO $ snd <$> execCompiler (eval v)
+compileOnContext ctx v = runCIO $ snd <$> execCompiler (eval v)
   where
-    execCompiler : Compile a -> LIO String (a, Code Value)
+    execCompiler : Compile a -> CIO String (a, Code Value)
     execCompiler (Do inst) = pure ((), singleton inst)
     execCompiler (Refer sym) = do
       value <- lift $ Env.lookup sym (topLevel ctx)

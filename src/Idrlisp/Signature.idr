@@ -1,7 +1,7 @@
 module Idrlisp.Signature
 
 import Idrlisp.Sexp
-import Idrlisp.Pattern as Pattern
+import Idrlisp.Pattern
 
 %default total
 
