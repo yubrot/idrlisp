@@ -1,6 +1,5 @@
 module Idrlisp.Pattern
 
-import Data.SortedMap
 import Idrlisp.Sexp
 
 %default covering
@@ -31,13 +30,13 @@ build (x :: s) = Left x
 build s = Left s
 
 export
-bind : Pattern -> List (Sexp a) -> Either String (SortedMap String (Sexp a))
+bind : Pattern -> List (Sexp a) -> Either String (List (String, Sexp a))
 bind pat xs = go (fixed pat) (rest pat) xs
   where
-    go : List String -> Maybe String -> List (Sexp a) -> Either String (SortedMap String (Sexp a))
+    go : List String -> Maybe String -> List (Sexp a) -> Either String (List (String, Sexp a))
     go (p :: ps) rest [] = Left "not enough arguments"
-    go (p :: ps) rest (a :: args) = insert p a <$> go ps rest args
-    go [] Nothing [] = Right empty
+    go (p :: ps) rest (a :: args) = ((p, a) ::) <$> go ps rest args
+    go [] Nothing [] = Right []
     go [] Nothing (a :: args) = Left "too much arguments"
-    go [] (Just rest) args = Right $ fromList [(rest, foldr (::) Nil args)]
+    go [] (Just rest) args = Right [(rest, foldr (::) Nil args)]
 

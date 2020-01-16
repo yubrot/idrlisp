@@ -9,7 +9,7 @@ build' : Sexp () -> Either (Sexp ()) Pattern
 build' = Pattern.build
 
 bind' : List String -> Maybe String -> List (Sexp ()) -> Either String (List (String, Sexp ()))
-bind' f r args = toList <$> Pattern.bind (MkPattern f r) args
+bind' f r args = Pattern.bind (MkPattern f r) args
 
 export
 test : IO ()
