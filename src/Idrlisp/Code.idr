@@ -20,7 +20,7 @@ mutual
     | Def String
     | Set String
 
-  public export
+  export
   data Code a = MkCode (List (Inst a))
 
 export
@@ -28,8 +28,18 @@ empty : Code a
 empty = MkCode []
 
 export
+tailPosition : Code a -> Bool
+tailPosition (MkCode [Leave]) = True
+tailPosition (MkCode _) = False
+
+export
 singleton : Inst a -> Code a
 singleton = MkCode . pure
+
+export
+next : Code a -> Maybe (Inst a, Code a)
+next (MkCode []) = Nothing
+next (MkCode (x :: xs)) = Just (x, MkCode xs)
 
 export
 (++) : Code a -> Code a -> Code a

@@ -1,7 +1,7 @@
 module TestRunner
 
-import Idrlisp
 import CIO
+import Idrlisp
 
 %default covering
 
@@ -20,33 +20,41 @@ record TestCase where
   command : Command
 
 namespace Exec
-  parses : String -> CIO String Value
-  parses input = either throw pure $ parse input
+  parsing : String -> CIO String Value
+  parsing input = either throw pure $ parseExpr input
 
-  compiles : Context -> Value -> CIO String (Code Value)
-  compiles ctx value = lift (compileOnContext ctx value) >>= either throw pure
+  compiling : Context -> Value -> CIO String (Code Value)
+  compiling ctx value = lift (compileExpr ctx value) >>= either throw pure
 
-  success : Show a => String -> a -> CIO String ()
-  success expected a =
+  evaluating : Context -> Value -> CIO String Value
+  evaluating ctx value = lift (evalExpr ctx value) >>= either throw pure
+
+  outputs : Show a => String -> a -> CIO String ()
+  outputs expected a =
     if trim (show a) == expected
        then pure ()
        else throw $ show a
 
-  failure : Show b => (a -> CIO String b) -> a -> CIO String ()
-  failure f x = do
+  fails : Show b => (a -> CIO String b) -> a -> CIO String ()
+  fails f x = do
     err <- (Just <$> f x) `catch` \_ => pure Nothing
     case err of
       Nothing => pure ()
       Just x => throw $ show x
 
   execCommand : Context -> Command -> CIO String ()
-  execCommand ctx (ParseSuccess input output) = parses input >>= success output
-  execCommand ctx (ParseFailure input) = failure parses input
-  execCommand ctx (CompileSuccess input output) = parses input >>= compiles ctx >>= success output
-  execCommand ctx (CompileFailure input) = parses input >>= failure (compiles ctx)
-  execCommand ctx (EvalSuccess input output) = pure ()
-  execCommand ctx (EvalFailure input) = pure ()
-  execCommand ctx (EvalAll input) = pure ()
+  execCommand ctx (ParseSuccess input output) = parsing input >>= outputs output
+  execCommand ctx (ParseFailure input) = fails parsing input
+  execCommand ctx (CompileSuccess input output) = parsing input >>= compiling ctx >>= outputs output
+  execCommand ctx (CompileFailure input) = parsing input >>= fails (compiling ctx)
+  execCommand ctx (EvalSuccess input output) = parsing input >>= evaluating ctx >>= outputs output
+  execCommand ctx (EvalFailure input) = parsing input >>= fails (evaluating ctx)
+  execCommand ctx (EvalAll input) = do
+    program <- either throw pure $ parseProgram input
+    result <- lift $ evalProgram ctx program
+    case result of
+      Left (_, err) => throw err
+      Right _ => pure ()
 
   execTestCase : Context -> TestCase -> CIO String Bool
   execTestCase ctx (MkTestCase header command) =
@@ -60,9 +68,8 @@ namespace Exec
 
 namespace Read
   readLine : File -> CIO String String
-  readLine fh = do
-    a <- lift $ fGetLine fh
-    case a of
+  readLine fh =
+    case !(lift $ fGetLine fh) of
       Right s =>
         case length s of
           Z => throw "End of input"

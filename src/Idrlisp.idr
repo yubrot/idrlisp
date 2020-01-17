@@ -2,51 +2,137 @@ module Idrlisp
 
 import CIO
 import public Idrlisp.Value
-import Idrlisp.Parser as Parser
-import Idrlisp.Env as Env
-import Idrlisp.Syntax as Syntax
+import Idrlisp.Parser
+import Idrlisp.Env
+import Idrlisp.Syntax
 
 %default covering
 
 export
-parse : String -> Either String Value
-parse = Parser.parseToEnd
+parseExpr : String -> Either String Value
+parseExpr = Parser.parseToEnd
 
 export
-record Context where
-  constructor MkContext
-  topLevel : Env Value
+parseProgram : String -> Either String (List Value)
+parseProgram = Parser.parseToEnd
 
 export
 newContext : IO Context
 newContext =
   do
     env <- Env.new Nothing
-    install syntaxList env
+    traverse_ (uncurry (install env)) Syntax.syntaxList
     pure $ MkContext env
   where
-    install : List (String, Syntax) -> Env Value -> IO ()
-    install [] env = pure ()
-    install ((name, syn) :: xs) env = do
-      Env.define name (Pure (NSyntax syn)) env
-      install xs env
+    install : Env Value -> String -> Syntax -> IO ()
+    install env name syn = Env.define name (Pure (NSyntax syn)) env
 
 export
-compileOnContext : Context -> Value -> IO (Either String (Code Value))
-compileOnContext ctx v = runCIO $ snd <$> execCompiler (eval v)
+runCompile : Context -> Compile a -> CIO String (a, Code Value)
+runCompile ctx = run
   where
-    execCompiler : Compile a -> CIO String (a, Code Value)
-    execCompiler (Do inst) = pure ((), singleton inst)
-    execCompiler (Refer sym) = do
+    run : Compile a -> CIO String (a, Code Value)
+    run (Do inst) = pure ((), singleton inst)
+    run (Refer sym) = do
       value <- lift $ Env.lookup sym (topLevel ctx)
       pure (eitherToMaybe value, empty)
-    execCompiler (Block x) = do
-      (_, code) <- execCompiler x
+    run (Block x) = do
+      (_, code) <- run x
       pure (code, empty)
-    execCompiler (Pure x) = pure (x, empty)
-    execCompiler (Bind x f) = do
-      (a, code) <- execCompiler x
-      (b, code') <- execCompiler (f a)
+    run (Pure x) = pure (x, empty)
+    run (Bind x f) = do
+      (a, code) <- run x
+      (b, code') <- run (f a)
       pure (b, code ++ code')
-    execCompiler (Fail x) = throw x
+    run (Fail x) = throw x
+
+export
+runVM : Context -> VM a -> Cont -> CIO String (a, Cont)
+runVM ctx = run
+  where
+    run : VM a -> Cont -> CIO String (a, Cont)
+    run (Push value) cont = pure ((), record { stack $= (value ::) } cont)
+    run Pop cont =
+      case stack cont of
+        x :: xs => pure (Just x, record { stack = xs } cont)
+        _ => pure (Nothing, cont)
+    run (Get name) cont = do
+      value <- lift $ Env.lookup name (env cont)
+      pure (value, cont)
+    run (Define name value) cont = do
+      r <- lift $ Env.define name value (env cont)
+      pure (Right r, cont)
+    run (Set name value) cont = do
+      r <- lift $ Env.set name value (env cont)
+      pure (r, cont)
+    run CaptureEnv cont = pure (env cont, cont)
+    run Next cont =
+      case next (code cont) of
+        Just (x, xs) => pure (Just x, record { code = xs } cont)
+        Nothing => pure (Nothing, cont)
+    run (Enter nenv ncode) (MkCont stack env code dump) = do
+      nenv <- lift $ Env.new $ Just nenv
+      if tailPosition code
+         then pure ((), MkCont stack nenv ncode dump)
+         else pure ((), MkCont stack nenv ncode ((env, code) :: dump))
+    run Leave cont@(MkCont stack env code dump) =
+      case dump of
+        [] => pure (Left (), cont)
+        (penv, pcode) :: rest => pure (Right (env, code), MkCont stack penv pcode rest)
+    run DropCont cont = pure ((), MkCont [] (env cont) (singleton Leave) [])
+    run (RestoreCont cont) _ = pure ((), cont)
+    run CaptureCont cont = pure (cont, cont)
+    run (LoadBuiltin name) cont = pure (Nothing, cont)
+    run (Action action) cont = pure (!(lift action), cont)
+    run (Pure x) cont = pure (x, cont)
+    run (Bind x f) cont = do
+      (x, cont) <- run x cont
+      run (f x) cont
+    run (Fail err) cont = throw err
+
+export
+runMacroExpand : Context -> MacroExpand a -> CIO String a
+runMacroExpand ctx = run
+  where
+    run : MacroExpand a -> CIO String a
+    run (Refer sym) = do
+      value <- lift $ Env.lookup sym (topLevel ctx)
+      pure $ eitherToMaybe value
+    run (Execute op) = fst <$> runVM ctx op (MkCont [] (topLevel ctx) empty [])
+    run (Pure x) = pure x
+    run (Bind x f) = do
+      x <- run x
+      run (f x)
+    run (Fail err) = throw err
+
+export
+compileExpr : Context -> Value -> IO (Either String (Code Value))
+compileExpr ctx expr = runCIO $ snd <$> runCompile ctx (load expr)
+
+export
+macroExpandExpr : Context -> Value -> IO (Either String Value)
+macroExpandExpr ctx expr = runCIO $ runMacroExpand ctx (expand True expr)
+
+export
+execCode : Context -> Env Value -> Code Value -> IO (Either String Value)
+execCode ctx env code = runCIO $ fst <$> runVM ctx instCycle (MkCont [] env code [])
+
+export
+evalExpr : Context -> Value -> IO (Either String Value)
+evalExpr ctx expr = runCIO $ do
+  expr <- runMacroExpand ctx (expand True expr)
+  (_, code) <- runCompile ctx (load expr)
+  (r, _) <- runVM ctx instCycle (MkCont [] (topLevel ctx) code [])
+  pure r
+
+export
+evalProgram : Context -> List Value -> IO (Either (Nat, String) Value)
+evalProgram ctx = go 0 Nil
+  where
+    go : Nat -> Value -> List Value -> IO (Either (Nat, String) Value)
+    go index last [] = pure $ Right last
+    go index last (x :: xs) =
+      case !(evalExpr ctx x) of
+        Left err => pure $ Left (index, err)
+        Right last' => go (S index) last' xs
 
