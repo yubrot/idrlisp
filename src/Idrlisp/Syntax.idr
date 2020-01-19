@@ -63,7 +63,7 @@ mkSyntax name msig sig handle = (name, MkSyntax macroExpand compile)
       where
         go : List Bool -> List Value -> MacroExpand (List Value)
         go (s :: ss) (x :: xs) = [| ifThenElse s (expand True) pure x :: go ss xs |]
-        go _ xs = pure xs
+        go _ xs = traverse (expand True) xs
 
     compile : List Value -> Compile ()
     compile args =
