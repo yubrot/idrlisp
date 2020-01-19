@@ -17,6 +17,7 @@ data Signature a
   | List (Signature a)
   | Pat String
   | Pure String a
+  | Or (Signature a) (Signature a)
 
 namespace Args
   public export
@@ -37,6 +38,7 @@ Cast (Signature a) (Sexp b) where
   cast (List x) = [cast x, Sym "..."]
   cast (Pat x) = Sym x
   cast (Pure x _) = Sym x
+  cast (Or x y) = [Sym "or", cast x, cast y]
 
 export
 Cast (ArgsSignature a) (Sexp b) where
@@ -72,13 +74,14 @@ Match a b => Match (Signature a) (Sexp b) where
   SignatureType (Str _) = String
   SignatureType (Bool _) = Bool
   SignatureType Nil = ()
-  SignatureType (x :: y) =
-    case y of
-      Nil => SignatureType x
-      y' => (SignatureType x, SignatureType y')
+  SignatureType (a :: b) =
+    case b of
+      Nil => SignatureType a
+      b' => (SignatureType a, SignatureType b')
   SignatureType (List a) = List (SignatureType a)
   SignatureType (Pat _) = Pattern
   SignatureType (Pure _ a) = SignatureType a
+  SignatureType (Or a b) = Either (SignatureType a) (SignatureType b)
 
   match (Any _) x = Just x
   match (Num _) (Num x) = Just x
@@ -108,6 +111,7 @@ Match a b => Match (Signature a) (Sexp b) where
       Left _ => Nothing
   match (Pure _ s) (Pure x) = match s x
   match (Pure _ s) _ = Nothing
+  match (Or a b) x = (Left <$> match a x) <|> (Right <$> match b x)
 
 public export
 Match a b => Match (ArgsSignature a) (List (Sexp b)) where

@@ -22,6 +22,7 @@ signatureTest = describe "Signature" $ do
   let vec2 : Signature () = [Num "x", Num "y"]
   let strs : Signature () = List (Str "strs")
   let pat  : Signature () = Pat "args"
+  let numOrStr : Signature () = Or num str
 
   describe "show" $ do
     any `shouldShow` "any"
@@ -33,6 +34,7 @@ signatureTest = describe "Signature" $ do
     vec2 `shouldShow` "(x y)"
     strs `shouldShow` "(strs ...)"
     pat `shouldShow` "args"
+    numOrStr `shouldShow` "(or num str)"
   describe "match" $ do
     matchSignature any (Num 123)
       `shouldBe` Just (Sexp.Num 123)
@@ -79,6 +81,12 @@ signatureTest = describe "Signature" $ do
     matchSignature pat (Sym "xs")
       `shouldBe` Just (MkPattern [] (Just "xs"))
     matchSignature pat (Num 1)
+      `shouldBe` Nothing
+    matchSignature numOrStr (Num 1)
+      `shouldBe` Just (Left 1)
+    matchSignature numOrStr (Str "foo")
+      `shouldBe` Just (Right "foo")
+    matchSignature numOrStr (Sym "foo")
       `shouldBe` Nothing
 
 argsSignatureTest : IO ()
