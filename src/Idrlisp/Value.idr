@@ -281,7 +281,7 @@ namespace VM
   instCycle : VM Value
   instCycle =
     case !Next of
-      Just i => inst i *> instCycle
+      Just i => do inst i; instCycle
       Nothing => pop
 
 namespace MacroExpander
