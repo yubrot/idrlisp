@@ -15,6 +15,7 @@ modules =
   Idrlisp.Value,
   Idrlisp.Syntax,
   Idrlisp,
+  Idrlib,
   TestRunner,
   Test.Assertions,
   Test.Sexp,

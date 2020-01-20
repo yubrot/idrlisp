@@ -3,6 +3,7 @@ module Main
 import System
 import CIO
 import Idrlisp
+import Idrlib
 import TestRunner
 
 liftFileIO : IO (Either FileError a) -> CIO String a
@@ -54,9 +55,10 @@ runRepl ctx =
         pure False
 
 initContext : List String -> Bool -> CIO String Context
-initContext args boot =
-  -- TODO: handle args and boot
-  lift newContext
+initContext args boot = do
+  -- TODO: handle boot
+  builtins <- lift $ initIdrlib args
+  lift $ newContext builtins
 
 main : IO ()
 main =

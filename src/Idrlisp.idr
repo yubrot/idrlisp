@@ -1,6 +1,7 @@
 module Idrlisp
 
 import CIO
+import Data.SortedMap
 import public Idrlisp.Value
 import Idrlisp.Parser
 import Idrlisp.Env
@@ -17,12 +18,12 @@ parseProgram : String -> Either String (List Value)
 parseProgram = Parser.parseToEnd
 
 export
-newContext : IO Context
-newContext =
+newContext : List (String, Builtin) -> IO Context
+newContext builtins =
   do
     env <- Env.new Nothing
     traverse_ (uncurry (install env)) Syntax.syntaxList
-    pure $ MkContext env
+    pure $ MkContext env (fromList builtins)
   where
     install : Env Value -> String -> Syntax -> IO ()
     install env name syn = Env.define name (Pure (NSyntax syn)) env
@@ -82,7 +83,8 @@ runVM ctx = run
     run DropCont cont = pure ((), MkCont [] (env cont) (singleton Leave) [])
     run (RestoreCont cont) _ = pure ((), cont)
     run CaptureCont cont = pure (cont, cont)
-    run (LoadBuiltin name) cont = pure (Nothing, cont)
+    run CaptureContext cont = pure (ctx, cont)
+    run (LoadBuiltin name) cont = pure (lookup name (builtins ctx), cont)
     run (Action action) cont = pure (!(lift action), cont)
     run (Pure x) cont = pure (x, cont)
     run (Bind x f) cont = do

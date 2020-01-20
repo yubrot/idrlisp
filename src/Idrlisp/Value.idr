@@ -1,5 +1,6 @@
 module Idrlisp.Value
 
+import Data.SortedMap
 import public Idrlisp.Sexp
 import public Idrlisp.Pattern
 import public Idrlisp.Signature
@@ -62,10 +63,13 @@ mutual
       Enter : Env Value -> Code Value -> VM ()
       Leave : VM (Either () (Env Value, Code Value))
 
-      -- SECD
+      -- for continuation support
       DropCont : VM ()
       RestoreCont : Cont -> VM ()
       CaptureCont : VM Cont
+
+      -- for eval/macroexpand support
+      CaptureContext : VM Context
 
       LoadBuiltin : String -> VM (Maybe Builtin)
       Action : IO a -> VM a
@@ -107,6 +111,7 @@ mutual
   record Context where
     constructor MkContext
     topLevel : Env Value
+    builtins : SortedMap String Builtin
 
 export
 Show Native where
