@@ -34,7 +34,7 @@ parseAndEvalFiles ctx (file :: files) = do
 runRepl : Context -> CIO String ()
 runRepl ctx =
   do
-    lift $ fPutStrLn stderr "[fslisp REPL]"
+    lift $ fPutStrLn stderr "[idrlisp REPL]"
     loop repl
   where
     loop : Monad m => m Bool -> m ()

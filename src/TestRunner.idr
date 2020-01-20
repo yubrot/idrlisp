@@ -35,6 +35,13 @@ namespace Exec
        then pure ()
        else throw $ show a
 
+  outputs' : String -> Value -> CIO String ()
+  outputs' expected a = do
+    a' <- lift $ showIO a
+    if trim a' == expected
+       then pure ()
+       else throw a'
+
   fails : Show b => (a -> CIO String b) -> a -> CIO String ()
   fails f x = do
     err <- (Just <$> f x) `catch` \_ => pure Nothing
@@ -47,7 +54,7 @@ namespace Exec
   execCommand ctx (ParseFailure input) = fails parsing input
   execCommand ctx (CompileSuccess input output) = parsing input >>= compiling ctx >>= outputs output
   execCommand ctx (CompileFailure input) = parsing input >>= fails (compiling ctx)
-  execCommand ctx (EvalSuccess input output) = parsing input >>= evaluating ctx >>= outputs output
+  execCommand ctx (EvalSuccess input output) = parsing input >>= evaluating ctx >>= outputs' output
   execCommand ctx (EvalFailure input) = parsing input >>= fails (evaluating ctx)
   execCommand ctx (EvalAll input) = do
     program <- either throw pure $ parseProgram input

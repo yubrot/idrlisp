@@ -3,6 +3,7 @@ module Idrlib
 import Data.IORef
 import System
 import Idrlisp
+import Idrlisp.Vec
 
 %default covering
 
@@ -111,7 +112,7 @@ initIdrlib args = pure
   , mkBuiltinTest "proc?" (Builtin "" `Or` Fun "")
   , mkBuiltinTest "meta?" (Syntax "" `Or` Macro "")
   -- , mkBuiltinTest "port?" []
-  -- , mkBuiltinTest "vec?" []
+  , mkBuiltinTest "vec?" (Vec "")
 
   , mkBuiltin "+"
       [ Rest (Num "nums") ->> \nums => Push $ Num $ sum nums
@@ -195,4 +196,42 @@ initIdrlib args = pure
             then Push $ Num n
             else Push Nil
       ]
+
+  , mkBuiltin "vec"
+      [ Rest (Any "items") ->> \items => do
+          vec <- Action $ Vec.fromList items
+          Push $ Pure $ NVec vec
+      ]
+  , mkBuiltin "vec-make"
+      [ [Num "length", Any "init"] ->> \(length, init) => do
+          vec <- Action $ Vec.new (cast $ the Integer $ cast length) init
+          Push $ Pure $ NVec vec
+      ]
+  , mkBuiltin "vec-ref"
+      [ [Vec "vec", Num "index"] ->> \(vec, index) =>
+          case !(Action $ Vec.read (cast $ the Integer $ cast index) vec) of
+            Nothing => Push Nil
+            Just x => Push x
+      ]
+  , mkBuiltin "vec-length"
+      [ [Vec "vec"] ->> \vec => Push $ Num $ cast $ Vec.length vec
+      ]
+  , mkBuiltin "vec-set!"
+      [ [Vec "vec", Num "index", Any "item"] ->> \(vec, index, item) =>
+          case !(Action $ Vec.write (cast $ the Integer $ cast index) item vec) of
+            True => Push Nil
+            False => Fail "Evaluation error: vec-set!: index out of range"
+      ]
+  , mkBuiltin "vec-copy!"
+      [ [Vec "dest", Num "dest-start", Vec "src", Num "src-start", Num "length"] ->>
+          \(dest, destStart, src, srcStart, len) =>
+            let destStart' = cast $ the Integer $ cast destStart
+                srcStart' = cast $ the Integer $ cast srcStart
+                len' = cast $ the Integer $ cast len
+            in
+            case !(Action $ Vec.copy src srcStart' dest destStart' len') of
+              True => Push Nil
+              False => Fail "Evaluation error: vec-copy!: index out of range"
+      ]
   ]
+

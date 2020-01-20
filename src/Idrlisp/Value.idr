@@ -6,6 +6,7 @@ import public Idrlisp.Pattern
 import public Idrlisp.Signature
 import public Idrlisp.Code
 import Idrlisp.Env
+import Idrlisp.Vec
 
 %default covering
 
@@ -24,6 +25,7 @@ mutual
     NSyntax : Syntax -> Native
     NFun : Closure -> Native
     NMacro : Closure -> Native
+    NVec : Vec Value -> Native
 
   public export
   record Builtin where
@@ -119,6 +121,27 @@ Show Native where
   show (NSyntax x) = "<syntax>"
   show (NFun x) = "<fun>"
   show (NMacro x) = "<macro>"
+  show (NVec x) = "<vec>"
+
+data ShowIO = MkShowIO String
+
+Show ShowIO where
+  show (MkShowIO s) = s
+
+export
+showIO : Value -> IO String
+showIO value = show <$> traverse toShowIO value
+  where
+    toShowIO : Native -> IO ShowIO
+    toShowIO x@(NBuiltin _) = pure $ MkShowIO $ show x
+    toShowIO x@(NSyntax _) = pure $ MkShowIO $ show x
+    toShowIO x@(NFun _) = pure $ MkShowIO $ show x
+    toShowIO x@(NMacro _) = pure $ MkShowIO $ show x
+    toShowIO (NVec vec) = do
+      xs <- Vec.toList vec
+      ss <- traverse (traverse toShowIO) xs
+      pure $ MkShowIO $ show (Sym "vec" :: foldr (::) Sexp.Nil ss)
+
 
 namespace Signature
   public export
@@ -127,6 +150,7 @@ namespace Signature
     | NSyntax
     | NFun
     | NMacro
+    | NVec
 
   public export
   Match NativeSignature Native where
@@ -134,6 +158,7 @@ namespace Signature
     SignatureType NSyntax = Syntax
     SignatureType NFun = Closure
     SignatureType NMacro = Closure
+    SignatureType NVec = Vec Value
 
     match NBuiltin (NBuiltin x) = Just x
     match NBuiltin _ = Nothing
@@ -143,6 +168,8 @@ namespace Signature
     match NFun _ = Nothing
     match NMacro (NMacro x) = Just x
     match NMacro _ = Nothing
+    match NVec (NVec x) = Just x
+    match NVec _ = Nothing
 
   public export
   ValueSignature : Type
@@ -167,6 +194,10 @@ namespace Signature
   public export
   Macro : String -> ValueSignature
   Macro s = Pure s NMacro
+
+  public export
+  Vec : String -> ValueSignature
+  Vec s = Pure s NVec
 
 namespace VM
   export
