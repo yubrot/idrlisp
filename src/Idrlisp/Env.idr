@@ -5,6 +5,7 @@ import Data.SortedMap
 
 %default total
 
+||| An abstract representation of idrlisp environments.
 export
 record Env a where
   constructor MkEnv

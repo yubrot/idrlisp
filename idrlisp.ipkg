@@ -12,6 +12,7 @@ modules =
   Idrlisp.Signature,
   Idrlisp.Code,
   Idrlisp.Env,
+  Idrlisp.Vec,
   Idrlisp.Value,
   Idrlisp.Syntax,
   Idrlisp,
@@ -23,7 +24,8 @@ modules =
   Test.Parser,
   Test.Pattern,
   Test.Signature,
-  Test.Env
+  Test.Env,
+  Test.Vec
 
 tests =
   Test.Sexp.test,
@@ -31,7 +33,8 @@ tests =
   Test.Parser.test,
   Test.Pattern.test,
   Test.Signature.test,
-  Test.Env.test
+  Test.Env.test,
+  Test.Vec.test
 
 sourcedir = src
 executable = idrlisp

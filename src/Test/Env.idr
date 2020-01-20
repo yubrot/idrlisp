@@ -1,7 +1,7 @@
 module Test.Env
 
 import Test.Assertions
-import Idrlisp.Env as Env
+import Idrlisp.Env
 
 export
 test : IO ()
