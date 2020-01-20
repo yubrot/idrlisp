@@ -73,6 +73,36 @@ Eq a => Eq (SSyn a) where
       eq _ _ = False
 
 export
+Functor Sexp where
+  map f (Num x) = Num x
+  map f (Sym x) = Sym x
+  map f (Str x) = Str x
+  map f (Bool x) = Bool x
+  map f [] = []
+  map f (car :: cdr) = map f car :: map f cdr
+  map f (Pure x) = Pure (f x)
+
+export
+Foldable Sexp where
+  foldr f init (Num x) = init
+  foldr f init (Sym x) = init
+  foldr f init (Str x) = init
+  foldr f init (Bool x) = init
+  foldr f init [] = init
+  foldr f init (car :: cdr) = foldr f (foldr f init cdr) car
+  foldr f init (Pure x) = f x init
+
+export
+Traversable Sexp where
+  traverse f (Num x) = pure $ Num x
+  traverse f (Sym x) = pure $ Sym x
+  traverse f (Str x) = pure $ Str x
+  traverse f (Bool x) = pure $ Bool x
+  traverse f [] = pure []
+  traverse f (car :: cdr) = (::) <$> traverse f car <*> traverse f cdr
+  traverse f (Pure x) = Pure <$> f x
+
+export
 Cast (Sexp a) (SList a) where
   cast (x :: xs) with (cast {to = SList a} xs)
     | Proper xs' = Proper (x :: xs')

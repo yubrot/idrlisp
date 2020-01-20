@@ -65,3 +65,16 @@ test = describe "Test.Sexp" $ do
     for_ sexpAndSListTestcases (`shouldSatisfy` castIdentical)
   describe "show" $ do
     for_ showTestCases (\t => snd t `shouldShow` fst t)
+
+  let testSexp : Sexp Integer = [Pure 1, Pure 2 :: Pure 3]
+
+  describe "map" $
+    map succ testSexp
+      `shouldBe` [Pure 2, Pure 3 :: Pure 4]
+  describe "foldr" $
+    foldr (::) Nil testSexp
+      `shouldBe` [1, 2, 3]
+  describe "traverse" $
+    traverse (const (the (List Int) [0])) testSexp
+      `shouldBe` [[Pure 0, Pure 0 :: Pure 0]]
+
