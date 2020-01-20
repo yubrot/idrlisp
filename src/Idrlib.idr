@@ -12,6 +12,12 @@ mod' x y =
     0 => 0.0 / 0.0
     y' => cast (assert_total (cast x `mod` y'))
 
+chr' : Double -> VM Char
+chr' s =
+  if s < 0.0 || 256.0 < s
+    then Fail $ "Evaluation error: each byte of string must be inside the range 0-255"
+    else pure $ chr $ cast s
+
 dropPure : Value -> VM (Sexp ())
 dropPure = traverse $ const $ Fail "comparing impure values are unsupported"
 
@@ -146,5 +152,47 @@ initIdrlib args = pure
 
   , mkBuiltin "never"
       [ (Any "f" :: Rest (Any "arguments")) ->> \(f, args) => DropCont *> apply f args
+      ]
+
+  -- String support has limitations. please see README.md
+  , mkBuiltin "str"
+      [ Rest (Num "bytes") ->> \bytes => do
+          chars <- traverse chr' bytes
+          Push $ Str $ pack chars
+      ]
+  , mkBuiltin "str-ref"
+      [ [Str "string", Num "index"] ->> \(str, index) =>
+          let i = the Int $ cast index in
+          case i < 0 || i >= cast (length str) of
+            True => Push $ Nil
+            False => Push $ Num $ cast $ ord $ assert_total (strIndex str i)
+      ]
+  , mkBuiltin "str-bytesize"
+      [ [Str "string"] ->> \str => Push $ Num $ cast $ length str
+      ]
+  , mkBuiltin "str-concat"
+      [ Rest (Str "strings") ->> \strs => Push $ Str $ concat strs
+      ]
+  , mkBuiltin "substr"
+      [ [Str "string", Num "index", Num "bytesize"] ->> \(str, index, bytesize) =>
+          let index'    = the Nat $ cast $ the Integer $ cast index
+              bytesize' = the Nat $ cast $ the Integer $ cast bytesize
+          in
+          if index' < 0 || length str < index' + bytesize'
+            then Fail "Evaluation error: substr: index out of range"
+            else Push $ Str $ substr index' bytesize' str
+      ]
+  , mkBuiltin "sym->str"
+      [ [Sym "symbol"] ->> \sym => Push $ Str sym
+      ]
+  , mkBuiltin "num->str"
+      [ [Num "number"] ->> \num => Push $ Str $ show num
+      ]
+  , mkBuiltin "str->num"
+      [ [Str "string"] ->> \str =>
+          let n = the Double $ cast str in
+          if n /= 0.0 || str == "0" || str == "0.0"
+            then Push $ Num n
+            else Push Nil
       ]
   ]
