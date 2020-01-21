@@ -13,12 +13,6 @@ mod' x y =
     0 => 0.0 / 0.0
     y' => cast (assert_total (cast x `mod` y'))
 
-chr' : Double -> VM Char
-chr' s =
-  if s < 0.0 || 256.0 < s
-    then Fail $ "Evaluation error: each byte of string must be inside the range 0-255"
-    else pure $ chr $ cast s
-
 dropPure : Value -> Maybe (Sexp ())
 dropPure = traverse $ const Nothing
 
@@ -162,9 +156,8 @@ initIdrlib args = pure
 
   -- String support has limitations. please see README.md
   , mkBuiltin "str"
-      [ Rest (Num "bytes") ->> \bytes => do
-          chars <- traverse chr' bytes
-          Push $ Str $ pack chars
+      [ Rest (Num "bytes") ->> \chars =>
+          Push $ Str $ pack [chr $ cast c | c <- the (List Double) chars]
       ]
   , mkBuiltin "str-ref"
       [ [Str "string", Num "index"] ->> \(str, index) =>

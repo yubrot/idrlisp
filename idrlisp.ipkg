@@ -17,6 +17,7 @@ modules =
   Idrlisp.Syntax,
   Idrlisp,
   Idrlib,
+  Idrboot,
   TestRunner,
   Test.Assertions,
   Test.Sexp,
@@ -38,7 +39,7 @@ tests =
 
 sourcedir = src
 executable = idrlisp
--- opts = "--optimise-nat-like-types --cg-opt -O2"
+opts = "--optimise-nat-like-types --cg-opt -O2"
 
 main = Main
 

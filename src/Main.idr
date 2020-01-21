@@ -4,9 +4,12 @@ import System
 import CIO
 import Idrlisp
 import Idrlib
+import Idrboot
 import TestRunner
 
 %default covering
+%language TypeProviders
+%provide (bootCode : String) with readBootCode
 
 liftFileIO : IO (Either FileError a) -> CIO String a
 liftFileIO x =
@@ -58,9 +61,10 @@ runRepl ctx =
 
 initContext : List String -> Bool -> CIO String Context
 initContext args boot = do
-  -- TODO: handle boot
   builtins <- lift $ initIdrlib args
-  lift $ newContext builtins
+  ctx <- lift $ newContext builtins
+  when boot $ ignore $ parseAndEvalProgram ctx "init" bootCode
+  pure ctx
 
 main : IO ()
 main =
