@@ -20,12 +20,13 @@ mutual
   ValueList = SList Native
 
   public export
-  data Native : Type where
-    NBuiltin : Builtin -> Native
-    NSyntax : Syntax -> Native
-    NFun : Closure -> Native
-    NMacro : Closure -> Native
-    NVec : Vec Value -> Native
+  data Native
+    = NBuiltin Builtin
+    | NSyntax Syntax
+    | NFun Closure
+    | NMacro Closure
+    | NVec (Vec Value)
+    | NPort File
 
   public export
   record Builtin where
@@ -122,6 +123,7 @@ namespace Show
     show (NSyntax x) = "<syntax>"
     show (NFun x) = "<fun>"
     show (NMacro x) = "<macro>"
+    show (NPort x) = "<port>"
     show (NVec x) = "<vec>"
 
   data ShowId = MkShowId String
@@ -138,6 +140,7 @@ namespace Show
       showNativeIO (NSyntax _) = pure $ MkShowId "<syntax>"
       showNativeIO (NFun _) = pure $ MkShowId "<fun>"
       showNativeIO (NMacro _) = pure $ MkShowId "<macro>"
+      showNativeIO (NPort _) = pure $ MkShowId "<port>"
       showNativeIO (NVec vec) = do
         xs <- Vec.toList vec
         ss <- traverse (traverse showNativeIO) xs
@@ -150,6 +153,7 @@ namespace Signature
     | NSyntax
     | NFun
     | NMacro
+    | NPort
     | NVec
 
   public export
@@ -158,6 +162,7 @@ namespace Signature
     SignatureType NSyntax = Syntax
     SignatureType NFun = Closure
     SignatureType NMacro = Closure
+    SignatureType NPort = File
     SignatureType NVec = Vec Value
 
     match NBuiltin (NBuiltin x) = Just x
@@ -168,6 +173,8 @@ namespace Signature
     match NFun _ = Nothing
     match NMacro (NMacro x) = Just x
     match NMacro _ = Nothing
+    match NPort (NPort x) = Just x
+    match NPort _ = Nothing
     match NVec (NVec x) = Just x
     match NVec _ = Nothing
 
@@ -178,26 +185,6 @@ namespace Signature
   public export
   ValueArgsSignature : Type
   ValueArgsSignature = ArgsSignature NativeSignature
-
-  public export
-  Builtin : String -> ValueSignature
-  Builtin s = Pure s NBuiltin
-
-  public export
-  Syntax : String -> ValueSignature
-  Syntax s = Pure s NSyntax
-
-  public export
-  Fun : String -> ValueSignature
-  Fun s = Pure s NFun
-
-  public export
-  Macro : String -> ValueSignature
-  Macro s = Pure s NMacro
-
-  public export
-  Vec : String -> ValueSignature
-  Vec s = Pure s NVec
 
 namespace VM
   export

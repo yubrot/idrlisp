@@ -112,8 +112,8 @@ compileExpr : Context -> Value -> IO (Either String (Code Value))
 compileExpr ctx expr = runCIO $ snd <$> runCompile ctx (load expr)
 
 export
-macroExpandExpr : Context -> Value -> IO (Either String Value)
-macroExpandExpr ctx expr = runCIO $ runMacroExpand ctx (expand True expr)
+macroExpandExpr : Context -> Bool -> Value -> IO (Either String Value)
+macroExpandExpr ctx recurse expr = runCIO $ runMacroExpand ctx (expand recurse expr)
 
 export
 execCode : Context -> Env Value -> Code Value -> IO (Either String Value)
