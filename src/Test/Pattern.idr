@@ -2,8 +2,10 @@ module Test.Pattern
 
 import Data.SortedMap
 import Test.Assertions
-import Idrlisp.Pattern as Pattern
+import Idrlisp.Pattern
 import Idrlisp.Sexp
+
+%default covering
 
 build' : Sexp () -> Either (Sexp ()) Pattern
 build' = Pattern.build
@@ -13,7 +15,7 @@ bind' f r args = Pattern.bind (MkPattern f r) args
 
 export
 test : IO ()
-test = describe "Test.Pattern" $ do
+test = describe "Idrlisp.Pattern" $ do
   describe "show" $ do
     MkPattern [] Nothing
       `shouldShow` "()"

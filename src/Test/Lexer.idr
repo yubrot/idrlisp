@@ -3,9 +3,11 @@ module Test.Lexer
 import Test.Assertions
 import Idrlisp.Lexer
 
+%default covering
+
 export
 test : IO ()
-test = describe "Test.Lexer" $ do
+test = describe "Idrlisp.Lexer" $ do
   describe "lex" $ do
     lex ""
       `shouldBe` Right []

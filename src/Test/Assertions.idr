@@ -1,6 +1,7 @@
 module Test.Assertions
 
 %access export
+%default total
 
 describe : String -> IO () -> IO ()
 describe label body = do

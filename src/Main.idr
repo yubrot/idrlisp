@@ -3,7 +3,10 @@ module Main
 import System
 import CIO
 import Idrlisp
+import Idrlib
 import TestRunner
+
+%default covering
 
 liftFileIO : IO (Either FileError a) -> CIO String a
 liftFileIO x =
@@ -33,7 +36,7 @@ parseAndEvalFiles ctx (file :: files) = do
 runRepl : Context -> CIO String ()
 runRepl ctx =
   do
-    lift $ fPutStrLn stderr "[fslisp REPL]"
+    lift $ fPutStrLn stderr "[idrlisp REPL]"
     loop repl
   where
     loop : Monad m => m Bool -> m ()
@@ -49,14 +52,15 @@ runRepl ctx =
       else do
         result <- (Right <$> parseAndEvalProgram ctx "<stdin>" input) `catch` (pure . Left)
         case result of
-          Right r => lift $ putStrLn $ show r
+          Right r => lift $ showIO r >>= putStrLn
           Left err => ignore $ lift $ fPutStrLn stderr err
         pure False
 
 initContext : List String -> Bool -> CIO String Context
-initContext args boot =
-  -- TODO: handle args and boot
-  lift newContext
+initContext args boot = do
+  -- TODO: handle boot
+  builtins <- lift $ initIdrlib args
+  lift $ newContext builtins
 
 main : IO ()
 main =

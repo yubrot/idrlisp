@@ -1,10 +1,12 @@
 module Idrlisp.Value
 
+import Data.SortedMap
 import public Idrlisp.Sexp
 import public Idrlisp.Pattern
 import public Idrlisp.Signature
 import public Idrlisp.Code
 import Idrlisp.Env
+import Idrlisp.Vec
 
 %default covering
 
@@ -18,11 +20,13 @@ mutual
   ValueList = SList Native
 
   public export
-  data Native : Type where
-    NBuiltin : Builtin -> Native
-    NSyntax : Syntax -> Native
-    NFun : Closure -> Native
-    NMacro : Closure -> Native
+  data Native
+    = NBuiltin Builtin
+    | NSyntax Syntax
+    | NFun Closure
+    | NMacro Closure
+    | NVec (Vec Value)
+    | NPort File
 
   public export
   record Builtin where
@@ -62,10 +66,13 @@ mutual
       Enter : Env Value -> Code Value -> VM ()
       Leave : VM (Either () (Env Value, Code Value))
 
-      -- SECD
+      -- for continuation support
       DropCont : VM ()
       RestoreCont : Cont -> VM ()
       CaptureCont : VM Cont
+
+      -- for eval/macroexpand support
+      CaptureContext : VM Context
 
       LoadBuiltin : String -> VM (Maybe Builtin)
       Action : IO a -> VM a
@@ -107,13 +114,37 @@ mutual
   record Context where
     constructor MkContext
     topLevel : Env Value
+    builtins : SortedMap String Builtin
 
-export
-Show Native where
-  show (NBuiltin x) = "<builtin>"
-  show (NSyntax x) = "<syntax>"
-  show (NFun x) = "<fun>"
-  show (NMacro x) = "<macro>"
+namespace Show
+  export
+  Show Native where
+    show (NBuiltin x) = "<builtin>"
+    show (NSyntax x) = "<syntax>"
+    show (NFun x) = "<fun>"
+    show (NMacro x) = "<macro>"
+    show (NPort x) = "<port>"
+    show (NVec x) = "<vec>"
+
+  data ShowId = MkShowId String
+
+  Show ShowId where
+    show (MkShowId s) = s
+
+  export
+  showIO : Value -> IO String
+  showIO value = show <$> traverse showNativeIO value
+    where
+      showNativeIO : Native -> IO ShowId
+      showNativeIO (NBuiltin _) = pure $ MkShowId "<builtin>"
+      showNativeIO (NSyntax _) = pure $ MkShowId "<syntax>"
+      showNativeIO (NFun _) = pure $ MkShowId "<fun>"
+      showNativeIO (NMacro _) = pure $ MkShowId "<macro>"
+      showNativeIO (NPort _) = pure $ MkShowId "<port>"
+      showNativeIO (NVec vec) = do
+        xs <- Vec.toList vec
+        ss <- traverse (traverse showNativeIO) xs
+        pure $ MkShowId $ show (Sym "vec" :: foldr (::) Sexp.Nil ss)
 
 namespace Signature
   public export
@@ -122,6 +153,8 @@ namespace Signature
     | NSyntax
     | NFun
     | NMacro
+    | NPort
+    | NVec
 
   public export
   Match NativeSignature Native where
@@ -129,6 +162,8 @@ namespace Signature
     SignatureType NSyntax = Syntax
     SignatureType NFun = Closure
     SignatureType NMacro = Closure
+    SignatureType NPort = File
+    SignatureType NVec = Vec Value
 
     match NBuiltin (NBuiltin x) = Just x
     match NBuiltin _ = Nothing
@@ -138,6 +173,10 @@ namespace Signature
     match NFun _ = Nothing
     match NMacro (NMacro x) = Just x
     match NMacro _ = Nothing
+    match NPort (NPort x) = Just x
+    match NPort _ = Nothing
+    match NVec (NVec x) = Just x
+    match NVec _ = Nothing
 
   public export
   ValueSignature : Type
@@ -146,22 +185,6 @@ namespace Signature
   public export
   ValueArgsSignature : Type
   ValueArgsSignature = ArgsSignature NativeSignature
-
-  public export
-  Builtin : String -> ValueSignature
-  Builtin s = Pure s NBuiltin
-
-  public export
-  Syntax : String -> ValueSignature
-  Syntax s = Pure s NSyntax
-
-  public export
-  Fun : String -> ValueSignature
-  Fun s = Pure s NFun
-
-  public export
-  Macro : String -> ValueSignature
-  Macro s = Pure s NMacro
 
 namespace VM
   export
@@ -245,7 +268,7 @@ namespace VM
   instCycle : VM Value
   instCycle =
     case !Next of
-      Just i => inst i *> instCycle
+      Just i => do inst i; instCycle
       Nothing => pop
 
 namespace MacroExpander
