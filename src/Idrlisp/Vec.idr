@@ -57,16 +57,16 @@ write index value (NonEmpty arr l) =
 
 export
 copy : Vec a -> Nat -> Vec a -> Nat -> Nat -> IO Bool
-copy src srcStart dest destStart len =
-  if srcStart + len <= length src && destStart + len <= length dest
-    then go [0,1..len] *> pure True
+copy src srcStart dest destStart Z =
+  pure $ srcStart <= length src && destStart <= length dest
+copy (NonEmpty src srcLen) srcStart (NonEmpty dest destLen) destStart (S len) =
+  if srcStart + S len <= cast srcLen && destStart + S len <= cast destLen
+    then traverse readWrite [0,1..len] *> pure True
     else pure False
   where
-    go : List Nat -> IO ()
-    go [] = pure ()
-    go [_] = pure ()
-    go (x :: xs) = do
-      Just v <- read (x + srcStart) src | _ => pure ()
-      write (x + destStart) v dest
-      go xs
+    readWrite : Nat -> IO ()
+    readWrite i =
+      unsafeReadArray src (cast (i + srcStart)) >>=
+      unsafeWriteArray dest (cast (i + destStart))
+copy src srcStart dest destStart len = pure False
 

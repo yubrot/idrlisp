@@ -5,6 +5,8 @@ import Idrlisp.Sexp
 import Idrlisp.Pattern
 import Idrlisp.Signature
 
+%default covering
+
 matchSignature : (sig : Signature ()) -> Sexp () -> Maybe (SignatureType sig)
 matchSignature = match
 
@@ -125,7 +127,7 @@ argsSignatureTest = describe "ArgsSignature" $ do
 
 export
 test : IO ()
-test = describe "Test.Signature" $ do
+test = describe "Idrlisp.Signature" $ do
   signatureTest
   argsSignatureTest
 

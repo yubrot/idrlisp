@@ -3,9 +3,11 @@ module Test.Vec
 import Test.Assertions
 import Idrlisp.Vec
 
+%default covering
+
 export
 test : IO ()
-test = describe "Test.Vec" $ do
+test = describe "Idrlisp.Vec" $ do
   describe "empty, new, fromList, toList" $ do
     Vec.toList (the (Vec ()) Vec.empty)
       `shouldBe'` []

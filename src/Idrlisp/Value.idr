@@ -115,33 +115,33 @@ mutual
     topLevel : Env Value
     builtins : SortedMap String Builtin
 
-export
-Show Native where
-  show (NBuiltin x) = "<builtin>"
-  show (NSyntax x) = "<syntax>"
-  show (NFun x) = "<fun>"
-  show (NMacro x) = "<macro>"
-  show (NVec x) = "<vec>"
+namespace Show
+  export
+  Show Native where
+    show (NBuiltin x) = "<builtin>"
+    show (NSyntax x) = "<syntax>"
+    show (NFun x) = "<fun>"
+    show (NMacro x) = "<macro>"
+    show (NVec x) = "<vec>"
 
-data ShowIO = MkShowIO String
+  data ShowId = MkShowId String
 
-Show ShowIO where
-  show (MkShowIO s) = s
+  Show ShowId where
+    show (MkShowId s) = s
 
-export
-showIO : Value -> IO String
-showIO value = show <$> traverse toShowIO value
-  where
-    toShowIO : Native -> IO ShowIO
-    toShowIO x@(NBuiltin _) = pure $ MkShowIO $ show x
-    toShowIO x@(NSyntax _) = pure $ MkShowIO $ show x
-    toShowIO x@(NFun _) = pure $ MkShowIO $ show x
-    toShowIO x@(NMacro _) = pure $ MkShowIO $ show x
-    toShowIO (NVec vec) = do
-      xs <- Vec.toList vec
-      ss <- traverse (traverse toShowIO) xs
-      pure $ MkShowIO $ show (Sym "vec" :: foldr (::) Sexp.Nil ss)
-
+  export
+  showIO : Value -> IO String
+  showIO value = show <$> traverse showNativeIO value
+    where
+      showNativeIO : Native -> IO ShowId
+      showNativeIO (NBuiltin _) = pure $ MkShowId "<builtin>"
+      showNativeIO (NSyntax _) = pure $ MkShowId "<syntax>"
+      showNativeIO (NFun _) = pure $ MkShowId "<fun>"
+      showNativeIO (NMacro _) = pure $ MkShowId "<macro>"
+      showNativeIO (NVec vec) = do
+        xs <- Vec.toList vec
+        ss <- traverse (traverse showNativeIO) xs
+        pure $ MkShowId $ show (Sym "vec" :: foldr (::) Sexp.Nil ss)
 
 namespace Signature
   public export

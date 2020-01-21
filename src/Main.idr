@@ -6,6 +6,8 @@ import Idrlisp
 import Idrlib
 import TestRunner
 
+%default covering
+
 liftFileIO : IO (Either FileError a) -> CIO String a
 liftFileIO x =
   case !(lift x) of
@@ -50,7 +52,7 @@ runRepl ctx =
       else do
         result <- (Right <$> parseAndEvalProgram ctx "<stdin>" input) `catch` (pure . Left)
         case result of
-          Right r => lift $ putStrLn $ show r
+          Right r => lift $ showIO r >>= putStrLn
           Left err => ignore $ lift $ fPutStrLn stderr err
         pure False
 

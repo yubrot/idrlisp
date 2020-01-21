@@ -3,9 +3,11 @@ module Test.Env
 import Test.Assertions
 import Idrlisp.Env
 
+%default covering
+
 export
 test : IO ()
-test = describe "Test.Env" $ do
+test = describe "Idrlisp.Env" $ do
   describe "single" $ do
     env <- Env.new Nothing
     Env.lookup "foo" env `shouldBe'` Left "foo"

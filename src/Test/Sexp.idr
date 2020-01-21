@@ -3,6 +3,8 @@ module Test.Sexp
 import Test.Assertions
 import Idrlisp.Sexp
 
+%default covering
+
 sexpAndSSynTestcases : List (Sexp (), SSyn ())
 sexpAndSSynTestcases =
   [ (Num 123, Num 123)
@@ -59,7 +61,7 @@ showTestCases =
 
 export
 test : IO ()
-test = describe "Test.Sexp" $ do
+test = describe "Idrlisp.Sexp" $ do
   describe "cast" $ do
     for_ sexpAndSSynTestcases (`shouldSatisfy` castIdentical)
     for_ sexpAndSListTestcases (`shouldSatisfy` castIdentical)

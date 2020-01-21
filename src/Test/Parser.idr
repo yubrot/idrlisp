@@ -4,9 +4,11 @@ import Test.Assertions
 import Idrlisp.Sexp
 import Idrlisp.Parser
 
+%default covering
+
 export
 test : IO ()
-test = describe "Test.Parser" $ do
+test = describe "Idrlisp.Parser" $ do
   describe "parseToEnd" $ do
     let parseSyn = parseToEnd {ty = SSyn ()}
     parseSyn "123"
