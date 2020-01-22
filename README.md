@@ -1,10 +1,10 @@
 idrlisp
 ==
 
-idrlisp is a [Idris](https://www.idris-lang.org/) version of [ocalisp](https://github.com/yubrot/ocalisp), a tiny Lisp-1 implementation.
+idrlisp is a [Idris](https://www.idris-lang.org/) version of [Rosetta Lisp](https://github.com/yubrot/rosetta-lisp) implementation.
 
     $ make
-    $ ./idrlisp lispboot/examples/conways-gol.lisp
+    $ ./idrlisp rosetta-lisp/examples/conways-gol.lisp
 
 ## String support limitation
 
